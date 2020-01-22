@@ -41,7 +41,7 @@ public:
             ULONG count) = 0;
 };
 
-// The COM server which implements the callback notifcation from Action Center
+// The COM server which implements the callback notification from Action Center
 class DECLSPEC_UUID(SNORETOAST_CALLBACK_GUID) SnoreToastActionCenterIntegration
     : public Microsoft::WRL::RuntimeClass<
               Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::ClassicCom>,

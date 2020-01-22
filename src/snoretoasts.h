@@ -53,7 +53,6 @@ class LIBSNORETOAST_EXPORT SnoreToasts
 {
 public:
     static std::wstring version();
-    static void waitForCallbackActivation();
     static HRESULT backgroundCallback(const std::wstring &appUserModelId,
                                       const std::wstring &invokedArgs, const std::wstring &msg);
 
@@ -62,7 +61,6 @@ public:
 
     HRESULT displayToast(const std::wstring &title, const std::wstring &body,
                          const std::filesystem::path &image);
-    SnoreToastActions::Actions userAction();
     bool closeNotification();
 
     void setSound(const std::wstring &soundFile);
@@ -72,6 +70,8 @@ public:
 
     void setButtons(const std::wstring &buttons);
     void setTextBoxEnabled(bool textBoxEnabled);
+
+    void setPayload(const std::wstring &payload);
 
     std::filesystem::path pipeName() const;
     void setPipeName(const std::filesystem::path &pipeName);
@@ -93,8 +93,6 @@ private:
     HRESULT setTextValues();
     HRESULT setButtons(ComPtr<IXmlNode> root);
     HRESULT setTextBox(ComPtr<IXmlNode> root);
-    HRESULT setEventHandler(
-            Microsoft::WRL::ComPtr<ABI::Windows::UI::Notifications::IToastNotification> toast);
     HRESULT setNodeValueString(const HSTRING &onputString,
                                ABI::Windows::Data::Xml::Dom::IXmlNode *node);
     HRESULT addAttribute(const std::wstring &name,
