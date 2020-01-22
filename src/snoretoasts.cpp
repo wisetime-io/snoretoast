@@ -17,7 +17,6 @@
 */
 
 #include "snoretoasts.h"
-#include "toasteventhandler.h"
 #include "linkhelper.h"
 #include "utils.h"
 #include "config.h"
@@ -59,7 +58,6 @@ public:
 
     std::wstring m_appID;
     std::filesystem::path m_pipeName;
-    std::filesystem::path m_application;
 
     std::wstring m_title;
     std::wstring m_body;
@@ -67,6 +65,8 @@ public:
     std::wstring m_sound = L"Notification.Default";
     std::wstring m_id;
     std::wstring m_buttons;
+    // attached to notification event (clicked dismissed etc)
+    std::wstring m_payload;
     bool m_silent = false;
     bool m_textbox = false;
 
@@ -78,8 +78,6 @@ public:
     ComPtr<IToastNotificationManagerStatics> m_toastManager;
     ComPtr<IToastNotifier> m_notifier;
     ComPtr<IToastNotification> m_notification;
-
-    ComPtr<ToastEventHandler> m_eventHanlder;
 
     static HANDLE ctoastEvent()
     {
@@ -105,12 +103,11 @@ public:
 
 SnoreToasts::SnoreToasts(const std::wstring &appID) : d(new SnoreToastsPrivate(this, appID))
 {
-    Utils::registerActivator();
+
 }
 
 SnoreToasts::~SnoreToasts()
 {
-    Utils::unregisterActivator();
     delete d;
 }
 
@@ -177,26 +174,6 @@ HRESULT SnoreToasts::displayToast(const std::wstring &title, const std::wstring 
     ST_RETURN_ON_ERROR(createToast());
     d->m_action = SnoreToastActions::Actions::Clicked;
     return S_OK;
-}
-
-SnoreToastActions::Actions SnoreToasts::userAction()
-{
-    if (d->m_eventHanlder.Get()) {
-        HANDLE event = d->m_eventHanlder.Get()->event();
-        if (WaitForSingleObject(event, EVENT_TIMEOUT) == WAIT_TIMEOUT) {
-            d->m_action = SnoreToastActions::Actions::Error;
-        } else {
-            d->m_action = d->m_eventHanlder.Get()->userAction();
-        }
-        // the initial value is SnoreToastActions::Actions::Hidden so if no action happend when we
-        // end up here, a hide was requested
-        if (d->m_action == SnoreToastActions::Actions::Hidden) {
-            d->m_notifier->Hide(d->m_notification.Get());
-            tLog << L"The application hid the toast using ToastNotifier.hide()";
-        }
-        CloseHandle(event);
-    }
-    return d->m_action;
 }
 
 bool SnoreToasts::closeNotification()
@@ -386,19 +363,6 @@ HRESULT SnoreToasts::setTextBox(ComPtr<IXmlNode> root)
     return addAttribute(L"hint-inputId", actionAttributes.Get(), L"textBox");
 }
 
-HRESULT SnoreToasts::setEventHandler(ComPtr<IToastNotification> toast)
-{
-    // Register the event handlers
-    EventRegistrationToken activatedToken, dismissedToken, failedToken;
-    ComPtr<ToastEventHandler> eventHandler(new ToastEventHandler(*this));
-
-    ST_RETURN_ON_ERROR(toast->add_Activated(eventHandler.Get(), &activatedToken));
-    ST_RETURN_ON_ERROR(toast->add_Dismissed(eventHandler.Get(), &dismissedToken));
-    ST_RETURN_ON_ERROR(toast->add_Failed(eventHandler.Get(), &failedToken));
-    d->m_eventHanlder = eventHandler;
-    return S_OK;
-}
-
 HRESULT SnoreToasts::setNodeValueString(const HSTRING &inputString, IXmlNode *node)
 {
     ComPtr<IXmlText> inputText;
@@ -486,16 +450,6 @@ void SnoreToasts::setPipeName(const std::filesystem::path &pipeName)
     d->m_pipeName = pipeName;
 }
 
-std::filesystem::path SnoreToasts::application() const
-{
-    return d->m_application;
-}
-
-void SnoreToasts::setApplication(const std::filesystem::path &application)
-{
-    d->m_application = application;
-}
-
 void SnoreToasts::setDuration(Duration duration)
 {
     d->m_duration = duration;
@@ -511,12 +465,11 @@ std::wstring SnoreToasts::formatAction(
         const std::vector<std::pair<std::wstring_view, std::wstring_view>> &extraData) const
 {
     const auto pipe = d->m_pipeName.wstring();
-    const auto application = d->m_application.wstring();
     std::vector<std::pair<std::wstring_view, std::wstring_view>> data = {
         { L"action", SnoreToastActions::getActionString(action) },
         { L"notificationId", std::wstring_view(d->m_id) },
         { L"pipe", std::wstring_view(pipe) },
-        { L"application", std::wstring_view(application) }
+        { L"payload", std::wstring_view(d->m_payload) }
     };
     data.insert(data.end(), extraData.cbegin(), extraData.cend());
     return Utils::formatData(data);
@@ -546,9 +499,6 @@ HRESULT SnoreToasts::createToast()
         tLog << "Failed to retreive NotificationSettings ensure your appId is registered";
     }
     switch (setting) {
-    case NotificationSetting_Enabled:
-        ST_RETURN_ON_ERROR(setEventHandler(d->m_notification));
-        break;
     case NotificationSetting_DisabledForApplication:
         error = L"DisabledForApplication";
         break;
@@ -562,13 +512,15 @@ HRESULT SnoreToasts::createToast()
         error = L"DisabledByManifest";
         break;
     }
-    if (!error.empty()) {
+    if (setting != NotificationSetting_Enabled) {
         std::wstringstream err;
         err << L"Notifications are disabled\n"
             << L"Reason: " << error << L" Please make sure that the app id is set correctly.\n"
             << L"Command Line: " << GetCommandLineW();
         tLog << err.str();
         std::wcerr << err.str() << std::endl;
+        // offset to not conflic with existing error statuses
+        return -6000 - setting;
     }
     return d->m_notifier->Show(d->m_notification.Get());
 }
@@ -595,14 +547,7 @@ HRESULT SnoreToasts::backgroundCallback(const std::wstring &appUserModelId,
     }
     const auto pipe = dataMap.find(L"pipe");
     if (pipe != dataMap.cend()) {
-        if (!Utils::writePipe(pipe->second, dataString)) {
-            const auto app = dataMap.find(L"application");
-            if (app != dataMap.cend()) {
-                if (Utils::startProcess(app->second)) {
-                    Utils::writePipe(pipe->second, dataString, true);
-                }
-            }
-        }
+        Utils::writePipe(pipe->second, dataString);
     }
 
     tLog << dataString;
@@ -612,9 +557,7 @@ HRESULT SnoreToasts::backgroundCallback(const std::wstring &appUserModelId,
     }
     return S_OK;
 }
-void SnoreToasts::waitForCallbackActivation()
-{
-    Utils::registerActivator();
-    WaitForSingleObject(SnoreToastsPrivate::ctoastEvent(), EVENT_TIMEOUT);
-    Utils::unregisterActivator();
+
+void SnoreToasts::setPayload(const std::wstring &payload) {
+  d->m_payload = payload;
 }

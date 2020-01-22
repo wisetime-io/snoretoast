@@ -16,7 +16,6 @@
     along with SnoreToast.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "linkhelper.h"
-#include "toasteventhandler.h"
 #include "utils.h"
 
 #include <propvarutil.h>

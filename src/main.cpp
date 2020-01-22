@@ -18,8 +18,6 @@
 #include "snoretoasts.h"
 #include "config.h"
 
-#include "toasteventhandler.h"
-
 #include "snoretoastactioncenterintegration.h"
 
 #include "linkhelper.h"
@@ -285,7 +283,6 @@ SnoreToastActions::Actions parse(std::vector<wchar_t *> args)
             }
             SnoreToasts app(appID);
             app.setPipeName(pipe);
-            app.setApplication(application);
             app.setSilent(silent);
             app.setSound(sound);
             app.setId(id);
@@ -293,7 +290,7 @@ SnoreToastActions::Actions parse(std::vector<wchar_t *> args)
             app.setTextBoxEnabled(isTextBoxEnabled);
             app.setDuration(duration);
             app.displayToast(title, body, image);
-            return app.userAction();
+//            return app.userAction();
         } else {
             help(L"");
             return SnoreToastActions::Actions::Clicked;
@@ -305,7 +302,7 @@ SnoreToastActions::Actions parse(std::vector<wchar_t *> args)
 
 SnoreToastActions::Actions handleEmbedded()
 {
-    SnoreToasts::waitForCallbackActivation();
+//    SnoreToasts::waitForCallbackActivation();
     return SnoreToastActions::Actions::Clicked;
 }
 
