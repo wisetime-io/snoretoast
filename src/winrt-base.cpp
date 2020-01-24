@@ -54,6 +54,22 @@ decltype(&::RoOriginateError) GetRoOriginateErrorFunction()
     return function;
 }
 
+decltype(&::WindowsCreateStringReference) GetWindowsCreateStringReference()
+{
+    static decltype(&::WindowsCreateStringReference) const function =
+            reinterpret_cast<decltype(&::WindowsCreateStringReference)>(
+                    LoadComBaseFunction("WindowsCreateStringReference"));
+    return function;
+}
+
+decltype(&::WindowsDeleteString) GetWindowsDeleteString()
+{
+    static decltype(&::WindowsDeleteString) const function =
+            reinterpret_cast<decltype(&::WindowsDeleteString)>(
+                    LoadComBaseFunction("WindowsDeleteString"));
+    return function;
+}
+
 }; // namespace dllimporter
 
 namespace winrt {
@@ -64,18 +80,9 @@ bool LoadApi()
     return dllimporter::GetRoInitializeFunction() && dllimporter::GetRoUninitializeFunction()
             && dllimporter::GetRoActivateInstanceFunction()
             && dllimporter::GetRoGetActivationFactoryFunction()
-			&& dllimporter::GetRoOriginateErrorFunction();
-}
-
-bool LoadStringApi()
-{
-    const bool succeded = SUCCEEDED(dllimporter::loadFunctionFromCom("WindowsCreateStringReference",
-                                                                     WindowsCreateStringReference))
-            && SUCCEEDED(dllimporter::loadFunctionFromCom("WindowsGetStringRawBuffer",
-                                                          WindowsGetStringRawBuffer))
-            && SUCCEEDED(dllimporter::loadFunctionFromCom("WindowsDeleteString",
-                                                          WindowsDeleteString));
-    return succeded;
+            && dllimporter::GetRoOriginateErrorFunction()
+            && dllimporter::GetWindowsCreateStringReference()
+			&& dllimporter::GetWindowsDeleteString();
 }
 
 HRESULT RoInitialize(RO_INIT_TYPE init_type)
@@ -109,6 +116,25 @@ HRESULT RoActivateInstance(HSTRING class_id, IInspectable **instance)
     return activate_instance_func(class_id, instance);
 }
 
+HRESULT WindowsCreateStringReference(PCWSTR sourceString, UINT32 length,
+                                     HSTRING_HEADER *hstringHeader, HSTRING *string)
+{
+    auto activate_instance_func = dllimporter::GetWindowsCreateStringReference();
+    if (!activate_instance_func)
+        return E_FAIL;
+    
+	return activate_instance_func(sourceString, length, hstringHeader, string);
+}
+
+HRESULT WindowsDeleteString(HSTRING string)
+{
+    auto activate_instance_func = dllimporter::GetWindowsDeleteString();
+    if (!activate_instance_func)
+        return E_FAIL;
+
+    return activate_instance_func(string);
+}
+
 };
 
 BOOL RoOriginateError(HRESULT error, HSTRING message)
@@ -118,4 +144,6 @@ BOOL RoOriginateError(HRESULT error, HSTRING message)
         return E_FAIL;
     return activate_instance_func(error, message);
 }
+
+
 

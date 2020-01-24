@@ -51,28 +51,17 @@ decltype(&::RoGetActivationFactory) GetRoGetActivationFactoryFunction();
 
 decltype(&::RoOriginateError) GetRoOriginateErrorFunction();
 
+decltype(&::WindowsCreateStringReference) GetWindowsCreateStringReference();
+
+decltype(&::WindowsDeleteString) GetWindowsDeleteString();
+
 }; // namespace dllimporter
-
-typedef HRESULT(FAR STDAPICALLTYPE *f_WindowsCreateStringReference)(
-        _In_reads_opt_(length + 1) PCWSTR sourceString, UINT32 length,
-        _Out_ HSTRING_HEADER *hstringHeader,
-        _Outptr_result_maybenull_ _Result_nullonfailure_ HSTRING *string);
-
-typedef PCWSTR(FAR STDAPICALLTYPE *f_WindowsGetStringRawBuffer)(_In_ HSTRING string,
-                                                                _Out_ UINT32 *length);
-
-typedef HRESULT(FAR STDAPICALLTYPE *f_WindowsDeleteString)(_In_opt_ HSTRING string);
 
 BOOL RoOriginateError(HRESULT error, HSTRING message);
 
 namespace winrt {
-static f_WindowsCreateStringReference WindowsCreateStringReference;
-static f_WindowsGetStringRawBuffer WindowsGetStringRawBuffer;
-static f_WindowsDeleteString WindowsDeleteString;
 
 bool LoadApi();
-
-bool LoadStringApi();
 
 HRESULT RoInitialize(RO_INIT_TYPE init_type);
 void RoUninitialize();
@@ -80,5 +69,10 @@ void RoUninitialize();
 HRESULT RoGetActivationFactory(HSTRING class_id, const IID &iid, void **out_factory);
 
 HRESULT RoActivateInstance(HSTRING class_id, IInspectable **instance);
+
+HRESULT WindowsCreateStringReference(PCWSTR sourceString, UINT32 length,
+                                     HSTRING_HEADER *hstringHeader, HSTRING *string);
+
+HRESULT WindowsDeleteString(HSTRING string);
 };
 

@@ -19,9 +19,9 @@
 #include "utils.h"
 #include "snoretoasts.h"
 
-//#include <wrl/client.h>
-//#include <wrl/implements.h>
-//#include <wrl/module.h>
+#include <wrl/client.h>
+#include <wrl/implements.h>
+#include <wrl/module.h>
 
 using namespace Microsoft::WRL;
 
@@ -35,10 +35,10 @@ bool registerActivator()
 {
     if (!s_registered) {
         s_registered = true;
-        /*Microsoft::WRL::Module<Microsoft::WRL::OutOfProc>::Create([] {});
+        Microsoft::WRL::Module<Microsoft::WRL::OutOfProc>::Create([] {});
         Microsoft::WRL::Module<Microsoft::WRL::OutOfProc>::GetModule().IncrementObjectCount();
         return SUCCEEDED(
-                Microsoft::WRL::Module<Microsoft::WRL::OutOfProc>::GetModule().RegisterObjects());*/
+                Microsoft::WRL::Module<Microsoft::WRL::OutOfProc>::GetModule().RegisterObjects());
     }
     return true;
 }
@@ -47,8 +47,8 @@ void unregisterActivator()
 {
     if (s_registered) {
         s_registered = false;
-        //Microsoft::WRL::Module<Microsoft::WRL::OutOfProc>::GetModule().UnregisterObjects();
-        //Microsoft::WRL::Module<Microsoft::WRL::OutOfProc>::GetModule().DecrementObjectCount();
+        Microsoft::WRL::Module<Microsoft::WRL::OutOfProc>::GetModule().UnregisterObjects();
+        Microsoft::WRL::Module<Microsoft::WRL::OutOfProc>::GetModule().DecrementObjectCount();
     }
 }
 

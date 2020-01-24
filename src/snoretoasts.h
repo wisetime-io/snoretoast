@@ -60,15 +60,20 @@ public:
 
     StringWrapper(_In_ const std::wstring &stringRef) noexcept
     {
-        HRESULT hr = winrt::WindowsCreateStringReference(
-                stringRef.c_str(), static_cast<UINT32>(stringRef.length()), &_header, &_hstring);
+        const wchar_t *data = stringRef.c_str();
+        UINT32 len = static_cast<UINT32>(stringRef.length());
+
+        HRESULT hr = winrt::WindowsCreateStringReference(data, len,
+                                                         &_header, &_hstring);
         if (FAILED(hr)) {
             RaiseException(static_cast<DWORD>(STATUS_INVALID_PARAMETER), EXCEPTION_NONCONTINUABLE,
                            0, nullptr);
         }
     }
 
-    ~StringWrapper() { winrt::WindowsDeleteString(_hstring); }
+    ~StringWrapper() { 
+		winrt::WindowsDeleteString(_hstring);
+	}
 
     inline HSTRING Get() const noexcept { return _hstring; }
 

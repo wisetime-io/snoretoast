@@ -290,7 +290,7 @@ SnoreToastActions::Actions parse(std::vector<wchar_t *> args)
             app.setTextBoxEnabled(isTextBoxEnabled);
             app.setDuration(duration);
             app.displayToast(title, body, image);
-//            return app.userAction();
+            //            return app.userAction();
         } else {
             help(L"");
             return SnoreToastActions::Actions::Clicked;
@@ -302,7 +302,7 @@ SnoreToastActions::Actions parse(std::vector<wchar_t *> args)
 
 SnoreToastActions::Actions handleEmbedded()
 {
-//    SnoreToasts::waitForCallbackActivation();
+    SnoreToasts::waitForCallbackActivation();
     return SnoreToastActions::Actions::Clicked;
 }
 
@@ -322,14 +322,15 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, wchar_t *, int)
     wchar_t **argv = CommandLineToArgvW(commandLine, &argc);
     SnoreToastActions::Actions action = SnoreToastActions::Actions::Clicked;
 
-    HRESULT hr = Windows::Foundation::Initialize(RO_INIT_MULTITHREADED);
+    winrt::LoadApi();
+    HRESULT hr = winrt::RoInitialize(RO_INIT_MULTITHREADED);
     if (SUCCEEDED(hr)) {
         if (std::wstring(commandLine).find(L"-Embedding") != std::wstring::npos) {
             action = handleEmbedded();
         } else {
             action = parse(std::vector<wchar_t *>(argv, argv + argc));
         }
-        Windows::Foundation::Uninitialize();
+        winrt::RoUninitialize();
     }
 
     return static_cast<int>(action);

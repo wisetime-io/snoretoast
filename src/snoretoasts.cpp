@@ -43,10 +43,11 @@ public:
     SnoreToastsPrivate(SnoreToasts *parent, const std::wstring &appID)
         : m_parent(parent), m_appID(appID), m_id(std::to_wstring(GetCurrentProcessId()))
     {
+		std::wstring runtimeClassName(RuntimeClass_Windows_UI_Notifications_ToastNotificationManager);
+        StringWrapper str(runtimeClassName);
+
         HRESULT hr = winrt::RoGetActivationFactory(
-                StringWrapper(
-                        RuntimeClass_Windows_UI_Notifications_ToastNotificationManager)
-                        .Get(),
+						str.Get(),
                 IID_INS_ARGS(&m_toastManager));
 
         if (!SUCCEEDED(hr)) {
