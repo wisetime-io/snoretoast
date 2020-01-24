@@ -39,6 +39,7 @@ HRESULT loadFunctionFromCom(LPCSTR name, Function &func)
 }
 
 FARPROC LoadComBaseFunction(const char *function_name);
+FARPROC LoadRtErrorFunction(const char *function_name);
 
 decltype(&::RoInitialize) GetRoInitializeFunction();
 
@@ -47,6 +48,8 @@ decltype(&::RoUninitialize) GetRoUninitializeFunction();
 decltype(&::RoActivateInstance) GetRoActivateInstanceFunction();
 
 decltype(&::RoGetActivationFactory) GetRoGetActivationFactoryFunction();
+
+decltype(&::RoOriginateError) GetRoOriginateErrorFunction();
 
 }; // namespace dllimporter
 
@@ -59,6 +62,8 @@ typedef PCWSTR(FAR STDAPICALLTYPE *f_WindowsGetStringRawBuffer)(_In_ HSTRING str
                                                                 _Out_ UINT32 *length);
 
 typedef HRESULT(FAR STDAPICALLTYPE *f_WindowsDeleteString)(_In_opt_ HSTRING string);
+
+BOOL RoOriginateError(HRESULT error, HSTRING message);
 
 namespace winrt {
 static f_WindowsCreateStringReference WindowsCreateStringReference;
@@ -76,3 +81,4 @@ HRESULT RoGetActivationFactory(HSTRING class_id, const IID &iid, void **out_fact
 
 HRESULT RoActivateInstance(HSTRING class_id, IInspectable **instance);
 };
+

@@ -9,6 +9,13 @@ FARPROC LoadComBaseFunction(const char *function_name)
     return handle ? ::GetProcAddress(handle, function_name) : nullptr;
 }
 
+FARPROC LoadRtErrorFunction(const char *function_name)
+{
+    // TODO: add free library
+    static HMODULE const handle = ::LoadLibrary(L"api-ms-win-core-winrt-error-l1-1-0.dll");
+    return handle ? ::GetProcAddress(handle, function_name) : nullptr;
+}
+
 decltype(&::RoInitialize) GetRoInitializeFunction()
 {
     static decltype(&::RoInitialize) const function =
@@ -39,6 +46,14 @@ decltype(&::RoGetActivationFactory) GetRoGetActivationFactoryFunction()
     return function;
 }
 
+decltype(&::RoOriginateError) GetRoOriginateErrorFunction()
+{
+    static decltype(&::RoOriginateError) const function =
+            reinterpret_cast<decltype(&::RoOriginateError)>(
+                    LoadRtErrorFunction("RoOriginateError"));
+    return function;
+}
+
 }; // namespace dllimporter
 
 namespace winrt {
@@ -48,7 +63,8 @@ bool LoadApi()
     // TODO(finnur): Add AssertIOAllowed once crbug.com/770193 is fixed.
     return dllimporter::GetRoInitializeFunction() && dllimporter::GetRoUninitializeFunction()
             && dllimporter::GetRoActivateInstanceFunction()
-            && dllimporter::GetRoGetActivationFactoryFunction();
+            && dllimporter::GetRoGetActivationFactoryFunction()
+			&& dllimporter::GetRoOriginateErrorFunction();
 }
 
 bool LoadStringApi()
@@ -92,4 +108,14 @@ HRESULT RoActivateInstance(HSTRING class_id, IInspectable **instance)
         return E_FAIL;
     return activate_instance_func(class_id, instance);
 }
+
 };
+
+BOOL RoOriginateError(HRESULT error, HSTRING message)
+{
+    auto activate_instance_func = dllimporter::GetRoOriginateErrorFunction();
+    if (!activate_instance_func)
+        return E_FAIL;
+    return activate_instance_func(error, message);
+}
+
