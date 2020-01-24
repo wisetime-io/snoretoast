@@ -302,7 +302,7 @@ SnoreToastActions::Actions parse(std::vector<wchar_t *> args)
 
 SnoreToastActions::Actions handleEmbedded()
 {
-    SnoreToasts::waitForCallbackActivation();
+    //SnoreToasts::waitForCallbackActivation();
     return SnoreToastActions::Actions::Clicked;
 }
 
