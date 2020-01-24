@@ -42,11 +42,12 @@ public:
     SnoreToastsPrivate(SnoreToasts *parent, const std::wstring &appID)
         : m_parent(parent), m_appID(appID), m_id(std::to_wstring(GetCurrentProcessId()))
     {
-
-        HRESULT hr = GetActivationFactory(
-                HStringReference(RuntimeClass_Windows_UI_Notifications_ToastNotificationManager)
+        HRESULT hr = winrt::RoGetActivationFactory(
+                StringWrapper(
+                        RuntimeClass_Windows_UI_Notifications_ToastNotificationManager)
                         .Get(),
-                &m_toastManager);
+                IID_INS_ARGS(&m_toastManager));
+
         if (!SUCCEEDED(hr)) {
             std::wcerr << L"SnoreToasts: Failed to register com Factory, please make sure you "
                           L"correctly initialised with RO_INIT_MULTITHREADED"

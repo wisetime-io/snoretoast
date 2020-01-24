@@ -44,6 +44,156 @@
 using namespace Microsoft::WRL;
 using namespace ABI::Windows::Data::Xml::Dom;
 
+namespace dllimporter {
+
+// TODO: replace with templates and use single function
+template<typename Function>
+HRESULT loadFunctionFromCom(LPCSTR name, Function &func)
+{
+    static HMODULE const library = ::LoadLibrary(L"combase.dll");
+    if (!library) {
+        return E_INVALIDARG;
+    }
+    func = reinterpret_cast<Function>(GetProcAddress(library, name));
+    return (func != nullptr) ? S_OK : E_FAIL;
+}
+
+FARPROC LoadComBaseFunction(const char *function_name)
+{
+	// TODO: add free library
+    static HMODULE const handle = ::LoadLibrary(L"combase.dll");
+    return handle ? ::GetProcAddress(handle, function_name) : nullptr;
+}
+
+decltype(&::RoInitialize) GetRoInitializeFunction()
+{
+    static decltype(&::RoInitialize) const function =
+            reinterpret_cast<decltype(&::RoInitialize)>(LoadComBaseFunction("RoInitialize"));
+    return function;
+}
+
+decltype(&::RoUninitialize) GetRoUninitializeFunction()
+{
+    static decltype(&::RoUninitialize) const function =
+            reinterpret_cast<decltype(&::RoUninitialize)>(LoadComBaseFunction("RoUninitialize"));
+    return function;
+}
+
+decltype(&::RoActivateInstance) GetRoActivateInstanceFunction()
+{
+    static decltype(&::RoActivateInstance) const function =
+            reinterpret_cast<decltype(&::RoActivateInstance)>(
+                    LoadComBaseFunction("RoActivateInstance"));
+    return function;
+}
+
+decltype(&::RoGetActivationFactory) GetRoGetActivationFactoryFunction()
+{
+    static decltype(&::RoGetActivationFactory) const function =
+            reinterpret_cast<decltype(&::RoGetActivationFactory)>(
+                    LoadComBaseFunction("RoGetActivationFactory"));
+    return function;
+}
+
+}; // namespace dllimporter
+
+typedef HRESULT(FAR STDAPICALLTYPE *f_WindowsCreateStringReference)(
+        _In_reads_opt_(length + 1) PCWSTR sourceString, UINT32 length,
+        _Out_ HSTRING_HEADER *hstringHeader,
+        _Outptr_result_maybenull_ _Result_nullonfailure_ HSTRING *string);
+
+typedef PCWSTR(FAR STDAPICALLTYPE *f_WindowsGetStringRawBuffer)(_In_ HSTRING string,
+                                                                _Out_ UINT32 *length);
+
+typedef HRESULT(FAR STDAPICALLTYPE *f_WindowsDeleteString)(_In_opt_ HSTRING string);
+
+namespace winrt {
+	static f_WindowsCreateStringReference WindowsCreateStringReference;
+	static f_WindowsGetStringRawBuffer WindowsGetStringRawBuffer;
+	static f_WindowsDeleteString WindowsDeleteString;
+
+	bool LoadApi()
+{
+    // TODO(finnur): Add AssertIOAllowed once crbug.com/770193 is fixed.
+    return dllimporter::GetRoInitializeFunction() && dllimporter::GetRoUninitializeFunction()
+            && dllimporter::GetRoActivateInstanceFunction()
+            && dllimporter::GetRoGetActivationFactoryFunction();
+}
+
+bool LoadStringApi()
+{
+	const bool succeded = SUCCEEDED(dllimporter::loadFunctionFromCom("WindowsCreateStringReference",
+                                                WindowsCreateStringReference))
+            && SUCCEEDED(dllimporter::loadFunctionFromCom("WindowsGetStringRawBuffer",
+                                                WindowsGetStringRawBuffer))
+            && SUCCEEDED(dllimporter::loadFunctionFromCom("WindowsDeleteString",
+                                                WindowsDeleteString));
+    return succeded ? S_OK : E_FAIL;
+}
+
+HRESULT RoInitialize(RO_INIT_TYPE init_type)
+{
+    auto ro_initialize_func = dllimporter::GetRoInitializeFunction();
+    if (!ro_initialize_func)
+        return E_FAIL;
+    return ro_initialize_func(init_type);
+}
+
+void RoUninitialize()
+{
+    auto ro_uninitialize_func = dllimporter::GetRoUninitializeFunction();
+    if (ro_uninitialize_func)
+        ro_uninitialize_func();
+}
+
+HRESULT RoGetActivationFactory(HSTRING class_id, const IID &iid, void **out_factory)
+{
+    auto get_factory_func = dllimporter::GetRoGetActivationFactoryFunction();
+    if (!get_factory_func)
+        return E_FAIL;
+    return get_factory_func(class_id, iid, out_factory);
+}
+
+HRESULT RoActivateInstance(HSTRING class_id, IInspectable **instance)
+{
+    auto activate_instance_func = dllimporter::GetRoActivateInstanceFunction();
+    if (!activate_instance_func)
+        return E_FAIL;
+    return activate_instance_func(class_id, instance);
+}
+};
+
+class StringWrapper
+{
+public:
+    StringWrapper(_In_reads_(length) PCWSTR stringRef, _In_ UINT32 length) noexcept
+    {
+        HRESULT hr = winrt::WindowsCreateStringReference(stringRef, length, &_header, &_hstring);
+        if (!SUCCEEDED(hr)) {
+            RaiseException(static_cast<DWORD>(STATUS_INVALID_PARAMETER), EXCEPTION_NONCONTINUABLE,
+                           0, nullptr);
+        }
+    }
+
+    StringWrapper(_In_ const std::wstring &stringRef) noexcept
+    {
+        HRESULT hr = winrt::WindowsCreateStringReference(
+                stringRef.c_str(), static_cast<UINT32>(stringRef.length()), &_header, &_hstring);
+        if (FAILED(hr)) {
+            RaiseException(static_cast<DWORD>(STATUS_INVALID_PARAMETER), EXCEPTION_NONCONTINUABLE,
+                           0, nullptr);
+        }
+    }
+
+    ~StringWrapper() { winrt::WindowsDeleteString(_hstring); }
+
+    inline HSTRING Get() const noexcept { return _hstring; }
+
+private:
+    HSTRING _hstring;
+    HSTRING_HEADER _header;
+};
+
 enum class Duration {
     Short, // default 7s
     Long // 25s
