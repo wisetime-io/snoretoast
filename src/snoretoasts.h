@@ -135,8 +135,6 @@ private:
                          const std::wstring &value);
     HRESULT createNewActionButton(ComPtr<IXmlNode> actionsNode, const std::wstring &value);
 
-    void printXML();
-
     friend class SnoreToastsPrivate;
     SnoreToastsPrivate *d;
 };
