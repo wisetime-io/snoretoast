@@ -57,8 +57,6 @@ decltype(&::WindowsDeleteString) GetWindowsDeleteString();
 
 }; // namespace dllimporter
 
-BOOL RoOriginateError(HRESULT error, HSTRING message);
-
 namespace winrt {
 
 bool LoadApi();

@@ -17,7 +17,7 @@ generate_export_header(libsnoretoast)
 
 create_icon_rc(${PROJECT_SOURCE_DIR}/data/zzz.ico TOAST_ICON)
 add_executable(snoretoast WIN32 main.cpp ${TOAST_ICON})
-target_link_libraries(snoretoast PRIVATE runtimeobject SnoreToast::LibSnoreToast snoreretoastsources)
+target_link_libraries(snoretoast PRIVATE SnoreToast::LibSnoreToast snoreretoastsources)
 target_compile_definitions(snoretoast PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
 add_executable(SnoreToast::SnoreToast ALIAS snoretoast)
 

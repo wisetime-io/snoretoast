@@ -137,7 +137,11 @@ HRESULT WindowsDeleteString(HSTRING string)
 
 };
 
-BOOL RoOriginateError(HRESULT error, HSTRING message)
+STDAPI_(BOOL)
+RoOriginateError(
+    _In_ HRESULT error,
+    _In_opt_ HSTRING message
+    )
 {
     auto activate_instance_func = dllimporter::GetRoOriginateErrorFunction();
     if (!activate_instance_func)
