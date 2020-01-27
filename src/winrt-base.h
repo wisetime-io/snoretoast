@@ -24,42 +24,115 @@
 using namespace Microsoft::WRL;
 using namespace ABI::Windows::Data::Xml::Dom;
 
-namespace dllimporter {
-
-// TODO: replace with templates and use single function
-template<typename Function>
-HRESULT loadFunctionFromCom(LPCSTR name, Function &func)
+class ProcPtr
 {
-    static HMODULE const library = ::LoadLibrary(L"combase.dll");
-    if (!library) {
-        return E_INVALIDARG;
+public:
+    explicit ProcPtr(FARPROC ptr) : _ptr(ptr) {}
+
+    template<typename T, typename = std::enable_if_t<std::is_function_v<T>>>
+    operator T *() const
+    {
+        return reinterpret_cast<T *>(_ptr);
     }
-    func = reinterpret_cast<Function>(GetProcAddress(library, name));
-    return (func != nullptr) ? S_OK : E_FAIL;
-}
 
-FARPROC LoadComBaseFunction(const char *function_name);
-FARPROC LoadRtErrorFunction(const char *function_name);
+    bool isAvailable() const { return _ptr != nullptr; }
 
-decltype(&::RoInitialize) GetRoInitializeFunction();
+private:
+    FARPROC _ptr;
+};
 
-decltype(&::RoUninitialize) GetRoUninitializeFunction();
+class DllLoader
+{
+public:
+    explicit DllLoader(LPCSTR filename) { _module = LoadLibraryA(filename); }
 
-decltype(&::RoActivateInstance) GetRoActivateInstanceFunction();
+    ~DllLoader() { FreeLibrary(_module); }
 
-decltype(&::RoGetActivationFactory) GetRoGetActivationFactoryFunction();
+    ProcPtr operator[](LPCSTR name) const
+    {
+        if (_module != nullptr)
+            return ProcPtr(GetProcAddress(_module, name));
 
-decltype(&::RoOriginateError) GetRoOriginateErrorFunction();
+        return ProcPtr(nullptr);
+    }
 
-decltype(&::WindowsCreateStringReference) GetWindowsCreateStringReference();
+private:
+    HMODULE _module;
+};
 
-decltype(&::WindowsDeleteString) GetWindowsDeleteString();
+class DynamicApiLoader
+{
+    DynamicApiLoader(DynamicApiLoader &) = delete;
+    DynamicApiLoader &operator=(DynamicApiLoader &) = delete;
 
-}; // namespace dllimporter
+protected:
+    DllLoader _dllLoader;
+
+    DynamicApiLoader(LPCSTR filename) : _dllLoader(filename) {}
+
+    ProcPtr resolve(LPCSTR name) const { return _dllLoader[name]; }
+
+public:
+    virtual ~DynamicApiLoader() {}
+
+    virtual bool isAvailable() const = 0;
+};
+
+class RtErrorApi final : public DynamicApiLoader
+{
+public:
+    RtErrorApi() : DynamicApiLoader("api-ms-win-core-winrt-error-l1-1-0.dll")
+    {
+        RoOriginateError = DynamicApiLoader::resolve("RoOriginateError");
+    }
+
+    decltype(RoOriginateError) *RoOriginateError = nullptr;
+
+    bool isAvailable() const override
+    {
+        return this->RoOriginateError != nullptr;
+    }
+};
+
+class ComBaseApi final : public DynamicApiLoader
+{
+public:
+    ComBaseApi() : DynamicApiLoader("combase.dll")
+    {
+        RoInitialize = DynamicApiLoader::resolve("RoInitialize");
+        RoUninitialize = DynamicApiLoader::resolve("RoUninitialize");
+
+        RoActivateInstance = DynamicApiLoader::resolve("RoActivateInstance");
+        RoGetActivationFactory = DynamicApiLoader::resolve("RoGetActivationFactory");
+        
+		WindowsCreateStringReference = DynamicApiLoader::resolve("WindowsCreateStringReference");
+        WindowsDeleteString = DynamicApiLoader::resolve("WindowsDeleteString");
+    }
+
+    bool isAvailable() const override
+    {
+        return this->RoInitialize != nullptr && this->RoUninitialize != nullptr
+                && this->RoActivateInstance != nullptr && this->RoGetActivationFactory != nullptr
+                && this->WindowsCreateStringReference != nullptr
+                && this->WindowsDeleteString != nullptr;
+    }
+
+    decltype(RoInitialize) *RoInitialize = nullptr;
+    decltype(RoUninitialize) *RoUninitialize = nullptr;
+
+    decltype(RoActivateInstance) *RoActivateInstance = nullptr;
+    decltype(RoGetActivationFactory) *RoGetActivationFactory = nullptr;
+
+    decltype(WindowsCreateStringReference) *WindowsCreateStringReference = nullptr;
+    decltype(WindowsDeleteString) *WindowsDeleteString = nullptr;
+};
 
 namespace winrt {
 
 bool LoadApi();
+void UnloadApi();
+
+bool isCompatible();
 
 HRESULT RoInitialize(RO_INIT_TYPE init_type);
 void RoUninitialize();
@@ -73,4 +146,3 @@ HRESULT WindowsCreateStringReference(PCWSTR sourceString, UINT32 length,
 
 HRESULT WindowsDeleteString(HSTRING string);
 };
-

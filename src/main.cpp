@@ -302,7 +302,7 @@ SnoreToastActions::Actions parse(std::vector<wchar_t *> args)
 
 SnoreToastActions::Actions handleEmbedded()
 {
-    //SnoreToasts::waitForCallbackActivation();
+    // SnoreToasts::waitForCallbackActivation();
     return SnoreToastActions::Actions::Clicked;
 }
 
@@ -318,11 +318,16 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, wchar_t *, int)
         std::ios::sync_with_stdio();
     }
     const auto commandLine = GetCommandLineW();
+
     int argc;
     wchar_t **argv = CommandLineToArgvW(commandLine, &argc);
+
     SnoreToastActions::Actions action = SnoreToastActions::Actions::Clicked;
 
-    winrt::LoadApi();
+    if (!winrt::LoadApi()) {
+		return (-1);
+	}
+ 
     HRESULT hr = winrt::RoInitialize(RO_INIT_MULTITHREADED);
     if (SUCCEEDED(hr)) {
         if (std::wstring(commandLine).find(L"-Embedding") != std::wstring::npos) {
@@ -333,5 +338,6 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, wchar_t *, int)
         winrt::RoUninitialize();
     }
 
+	winrt::UnloadApi();
     return static_cast<int>(action);
 }
