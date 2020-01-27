@@ -1,4 +1,6 @@
-#include "winrt-base.h"
+#include "dynamic/winrt-base.h"
+#include "dynamic/api/combaseapi.h"
+#include "dynamic/api/rterrorapi.h"
 
 namespace {
 static const ComBaseApi *comBaseApi = nullptr;

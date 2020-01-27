@@ -20,8 +20,8 @@
 #include "linkhelper.h"
 #include "utils.h"
 #include "config.h"
-#include "winrt-base.h"
-
+#include "dynamic/winrt-base.h"
+#include "dynamic/utils/stringwrapper.h"
 #include <wrl\wrappers\corewrappers.h>
 #include <sstream>
 #include <iostream>
@@ -43,12 +43,11 @@ public:
     SnoreToastsPrivate(SnoreToasts *parent, const std::wstring &appID)
         : m_parent(parent), m_appID(appID), m_id(std::to_wstring(GetCurrentProcessId()))
     {
-		std::wstring runtimeClassName(RuntimeClass_Windows_UI_Notifications_ToastNotificationManager);
+        std::wstring runtimeClassName(
+                RuntimeClass_Windows_UI_Notifications_ToastNotificationManager);
         StringWrapper str(runtimeClassName);
 
-        HRESULT hr = winrt::RoGetActivationFactory(
-						str.Get(),
-                IID_INS_ARGS(&m_toastManager));
+        HRESULT hr = winrt::RoGetActivationFactory(str.Get(), IID_INS_ARGS(&m_toastManager));
 
         if (!SUCCEEDED(hr)) {
             std::wcerr << L"SnoreToasts: Failed to register com Factory, please make sure you "
@@ -104,10 +103,7 @@ public:
     }
 };
 
-SnoreToasts::SnoreToasts(const std::wstring &appID) : d(new SnoreToastsPrivate(this, appID))
-{
-
-}
+SnoreToasts::SnoreToasts(const std::wstring &appID) : d(new SnoreToastsPrivate(this, appID)) {}
 
 SnoreToasts::~SnoreToasts()
 {
@@ -132,9 +128,9 @@ HRESULT SnoreToasts::displayToast(const std::wstring &title, const std::wstring 
                                                                  &d->m_toastXml));
     }
     ComPtr<ABI::Windows::Data::Xml::Dom::IXmlNodeList> rootList;
-     
+
     ST_RETURN_ON_ERROR(
-             d->m_toastXml->GetElementsByTagName(StringWrapper(L"toast").Get(), &rootList));
+            d->m_toastXml->GetElementsByTagName(StringWrapper(L"toast").Get(), &rootList));
 
     ComPtr<IXmlNode> root;
     ST_RETURN_ON_ERROR(rootList->Item(0, &root));
@@ -152,8 +148,7 @@ HRESULT SnoreToasts::displayToast(const std::wstring &title, const std::wstring 
         setTextBox(root);
     }
     ComPtr<ABI::Windows::Data::Xml::Dom::IXmlElement> audioElement;
-    ST_RETURN_ON_ERROR(
-            d->m_toastXml->CreateElement(StringWrapper(L"audio").Get(), &audioElement));
+    ST_RETURN_ON_ERROR(d->m_toastXml->CreateElement(StringWrapper(L"audio").Get(), &audioElement));
 
     ComPtr<IXmlNode> audioNodeTmp;
     ST_RETURN_ON_ERROR(audioElement.As(&audioNodeTmp));
@@ -545,6 +540,7 @@ HRESULT SnoreToasts::backgroundCallback(const std::wstring &appUserModelId,
     return S_OK;
 }
 
-void SnoreToasts::setPayload(const std::wstring &payload) {
-  d->m_payload = payload;
+void SnoreToasts::setPayload(const std::wstring &payload)
+{
+    d->m_payload = payload;
 }
