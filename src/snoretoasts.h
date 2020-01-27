@@ -41,6 +41,8 @@
 #include <string>
 #include <vector>
 
+#include "dynamic/winrt-base.h"
+
 using namespace Microsoft::WRL;
 using namespace ABI::Windows::Data::Xml::Dom;
 
@@ -101,8 +103,6 @@ private:
                          ABI::Windows::Data::Xml::Dom::IXmlNamedNodeMap *attributeMap,
                          const std::wstring &value);
     HRESULT createNewActionButton(ComPtr<IXmlNode> actionsNode, const std::wstring &value);
-
-    void printXML();
 
     friend class SnoreToastsPrivate;
     SnoreToastsPrivate *d;

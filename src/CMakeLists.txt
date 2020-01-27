@@ -6,8 +6,8 @@ target_include_directories(SnoreToastActions INTERFACE
 add_library(SnoreToast::SnoreToastActions ALIAS SnoreToastActions)
 
 configure_file(config.h.in config.h @ONLY)
-add_library(libsnoretoast STATIC snoretoasts.cpp linkhelper.cpp utils.cpp)
-target_link_libraries(libsnoretoast PUBLIC runtimeobject shlwapi SnoreToast::SnoreToastActions)
+add_library(libsnoretoast STATIC dynamic/utils/stringwrapper.cpp dynamic/api/combaseapi.cpp dynamic/api/rterrorapi.cpp dynamic/winrt-base.cpp snoretoasts.cpp linkhelper.cpp utils.cpp)
+target_link_libraries(libsnoretoast PUBLIC shlwapi SnoreToast::SnoreToastActions)
 target_compile_definitions(libsnoretoast PRIVATE UNICODE _UNICODE __WRL_CLASSIC_COM_STRICT__ WIN32_LEAN_AND_MEAN NOMINMAX)
 target_compile_definitions(libsnoretoast PUBLIC __WRL_CLASSIC_COM_STRICT__)
 target_include_directories(libsnoretoast PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
