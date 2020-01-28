@@ -54,6 +54,8 @@ enum class Duration {
 class LIBSNORETOAST_EXPORT SnoreToasts
 {
 public:
+    static bool supportsModernFeatures();
+
     static std::wstring version();
     static HRESULT backgroundCallback(const std::wstring &appUserModelId,
                                       const std::wstring &invokedArgs, const std::wstring &msg);

@@ -20,6 +20,7 @@
 #include "linkhelper.h"
 #include "utils.h"
 #include "config.h"
+#include "dynamic/api/ntapi.h"
 #include "dynamic/winrt-base.h"
 #include "dynamic/utils/stringwrapper.h"
 #include <wrl\wrappers\corewrappers.h>
@@ -510,6 +511,30 @@ HRESULT SnoreToasts::createToast()
 std::wstring SnoreToasts::version()
 {
     return SNORETOAST_VERSION;
+}
+
+bool SnoreToasts::supportsModernFeatures()
+{
+    constexpr auto MinimumSupportedVersion = 6;
+
+    static bool isChecked = false;
+    static bool isSupports = false;
+
+    if (isChecked)
+        return isSupports;
+
+    isSupports = false;
+
+    NtApi ntApi;
+    if (ntApi.isAvailable()) {
+        RTL_OSVERSIONINFOW versionInfo = { 0 };
+        versionInfo.dwOSVersionInfoSize = sizeof(versionInfo);
+
+        if (ntApi.RtlGetVersion(&versionInfo) == STATUS_SUCCESS)
+            isSupports = versionInfo.dwMajorVersion > MinimumSupportedVersion;
+    }
+
+    isChecked = true;
 }
 
 HRESULT SnoreToasts::backgroundCallback(const std::wstring &appUserModelId,

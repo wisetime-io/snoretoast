@@ -268,6 +268,9 @@ SnoreToastActions::Actions parse(std::vector<wchar_t *> args)
             help(L"Close only works if an -id id was provided.");
         }
     } else {
+        if (!SnoreToasts::supportsModernFeatures())
+            return SnoreToastActions::Actions::Error;
+
         hr = (title.length() > 0 && body.length() > 0) ? S_OK : E_FAIL;
         if (SUCCEEDED(hr)) {
             if (isTextBoxEnabled) {
@@ -323,11 +326,13 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, wchar_t *, int)
     wchar_t **argv = CommandLineToArgvW(commandLine, &argc);
 
     SnoreToastActions::Actions action = SnoreToastActions::Actions::Clicked;
+    if (!SnoreToasts::supportsModernFeatures())
+        return (-1);
 
     if (!winrt::LoadApi()) {
-		return (-1);
-	}
- 
+        return (-2);
+    }
+
     HRESULT hr = winrt::RoInitialize(RO_INIT_MULTITHREADED);
     if (SUCCEEDED(hr)) {
         if (std::wstring(commandLine).find(L"-Embedding") != std::wstring::npos) {
@@ -338,6 +343,6 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, wchar_t *, int)
         winrt::RoUninitialize();
     }
 
-	winrt::UnloadApi();
+    winrt::UnloadApi();
     return static_cast<int>(action);
 }
