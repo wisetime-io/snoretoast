@@ -23,6 +23,7 @@
 #include "dynamic/api/ntapi.h"
 #include "dynamic/winrt-base.h"
 #include "dynamic/utils/stringwrapper.h"
+#include <wrl/event.h>
 #include <wrl\wrappers\corewrappers.h>
 #include <sstream>
 #include <iostream>
@@ -60,9 +61,8 @@ public:
     SnoreToasts *m_parent;
 
     std::wstring m_appID;
-    std::filesystem::path m_pipeName;
-
-    std::wstring m_title;
+    
+	std::wstring m_title;
     std::wstring m_body;
     std::filesystem::path m_image;
     std::wstring m_sound = L"Notification.Default";
@@ -82,17 +82,7 @@ public:
     ComPtr<IToastNotifier> m_notifier;
     ComPtr<IToastNotification> m_notification;
 
-    static HANDLE ctoastEvent()
-    {
-        static HANDLE _event = [] {
-            std::wstringstream eventName;
-            eventName << L"ToastActivationEvent" << GetCurrentProcessId();
-            return CreateEvent(nullptr, true, false, eventName.str().c_str());
-        }();
-        return _event;
-    }
-
-    ComPtr<IToastNotificationHistory> getHistory()
+	ComPtr<IToastNotificationHistory> getHistory()
     {
         ComPtr<IToastNotificationManagerStatics2> toastStatics2;
         if (ST_CHECK_RESULT(m_toastManager.As(&toastStatics2))) {
@@ -423,16 +413,6 @@ HRESULT SnoreToasts::createNewActionButton(ComPtr<IXmlNode> actionsNode, const s
     return addAttribute(L"activationType", actionAttributes.Get(), L"foreground");
 }
 
-std::filesystem::path SnoreToasts::pipeName() const
-{
-    return d->m_pipeName;
-}
-
-void SnoreToasts::setPipeName(const std::filesystem::path &pipeName)
-{
-    d->m_pipeName = pipeName;
-}
-
 void SnoreToasts::setDuration(Duration duration)
 {
     d->m_duration = duration;
@@ -447,11 +427,9 @@ std::wstring SnoreToasts::formatAction(
         const SnoreToastActions::Actions &action,
         const std::vector<std::pair<std::wstring_view, std::wstring_view>> &extraData) const
 {
-    const auto pipe = d->m_pipeName.wstring();
     std::vector<std::pair<std::wstring_view, std::wstring_view>> data = {
         { L"action", SnoreToastActions::getActionString(action) },
         { L"notificationId", std::wstring_view(d->m_id) },
-        { L"pipe", std::wstring_view(pipe) },
         { L"payload", std::wstring_view(d->m_payload) }
     };
     data.insert(data.end(), extraData.cbegin(), extraData.cend());
@@ -535,16 +513,23 @@ bool SnoreToasts::supportsModernFeatures()
     }
 
     isChecked = true;
+    return isSupports;
 }
 
-HRESULT SnoreToasts::backgroundCallback(const std::wstring &appUserModelId,
-                                        const std::wstring &invokedArgs, const std::wstring &msg)
+void SnoreToasts::setPayload(const std::wstring &payload)
 {
-    tLog << "CToastNotificationActivationCallback::Activate: " << appUserModelId << " : "
-         << invokedArgs << " : " << msg;
+    d->m_payload = payload;
+}
+
+HRESULT SnoreToastsActivationCallback::onActivate(const std::wstring &appUserModelId,
+                                           const std::wstring &invokedArgs, const std::wstring &msg)
+{
+    tLog << "SnoreToastsActivationCallback::Activate: " << appUserModelId << " : "
+         << invokedArgs << " : " << msg	;
     const auto dataMap = Utils::splitData(invokedArgs);
     const auto action = SnoreToastActions::getAction(dataMap.at(L"action"));
-    std::wstring dataString;
+    
+	std::wstring dataString;
     if (action == SnoreToastActions::Actions::TextEntered) {
         std::wstringstream sMsg;
         sMsg << invokedArgs << L"text=" << msg;
@@ -552,20 +537,10 @@ HRESULT SnoreToasts::backgroundCallback(const std::wstring &appUserModelId,
     } else {
         dataString = invokedArgs;
     }
-    const auto pipe = dataMap.find(L"pipe");
-    if (pipe != dataMap.cend()) {
-        Utils::writePipe(pipe->second, dataString);
+
+	if (_onToastActivate) {
+        _onToastActivate(dataString);
     }
 
-    tLog << dataString;
-    if (!SetEvent(SnoreToastsPrivate::ctoastEvent())) {
-        tLog << "SetEvent failed" << GetLastError();
-        return S_FALSE;
-    }
     return S_OK;
-}
-
-void SnoreToasts::setPayload(const std::wstring &payload)
-{
-    d->m_payload = payload;
 }
