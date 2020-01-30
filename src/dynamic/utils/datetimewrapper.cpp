@@ -2,16 +2,13 @@
 
 DateTimeWrapper::DateTimeWrapper(INT64 ms)
 {
-	// The FILETIME structure is a 64-bit value 
-	// representing the number of 100-nanosecond intervals since January 1, 1601.
-	// And in such case we need to conver ms to similiar value.
+    // The FILETIME structure is a 64-bit value
+    // representing the number of 100-nanosecond intervals since January 1, 1601.
+    // And in such case we need to conver ms to similiar value.
     _dateTime.UniversalTime = getCurrentTime() + (ms * 10000);
 }
 
-DateTimeWrapper::~DateTimeWrapper()
-{
-	;
-}
+DateTimeWrapper::~DateTimeWrapper() {}
 
 HRESULT STDMETHODCALLTYPE DateTimeWrapper::get_Value(DateTime *dateTime)
 {
