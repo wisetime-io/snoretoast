@@ -24,6 +24,8 @@ HRESULT STDMETHODCALLTYPE DateTimeWrapper::QueryInterface(const IID &riid, void 
 
     bool validQueryInterface = false;
 
+	// Verification of different interface types
+	// and returning back the proper pointer
     if (riid == __uuidof(IUnknown)) {
         *ppvObject = static_cast<IUnknown *>(this);
         validQueryInterface = true;
@@ -33,6 +35,8 @@ HRESULT STDMETHODCALLTYPE DateTimeWrapper::QueryInterface(const IID &riid, void 
     }
 
     if (validQueryInterface) {
+		// In case of successful resolving of instance
+		// by interface type - increment reference counter
         AddRef();
     }
 

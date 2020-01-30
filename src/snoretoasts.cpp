@@ -449,6 +449,8 @@ HRESULT SnoreToasts::createToast(INT64 expireTimeoutSec)
             IID_INS_ARGS(&factory)));
     ST_RETURN_ON_ERROR(factory->CreateToastNotification(d->m_toastXml.Get(), &d->m_notification));
 
+	// If we have some expire timeout - setup it in DateTimeWrapper
+	// and pass to toast
     if (expireTimeoutSec > 0) {
         DateTimeWrapper dateTime(expireTimeoutSec * 1000);
         ST_RETURN_ON_ERROR(d->m_notification->put_ExpirationTime(&dateTime));

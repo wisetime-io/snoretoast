@@ -20,14 +20,16 @@ using namespace Microsoft::WRL;
 using namespace ABI::Windows::Data::Xml::Dom;
 using namespace ABI::Windows::Foundation;
 
+// Wraps DateTime structure for proper construction and
+// calculation of toast showing offset
 class DateTimeWrapper final : public IReference<DateTime>
 {
 	DISABLE_COPY(DateTimeWrapper)
 public:
 	explicit DateTimeWrapper(INT64 ms = 0);
-
 	~DateTimeWrapper();
 
+	// Implementation of COM interface
 	HRESULT STDMETHODCALLTYPE get_Value(DateTime *dateTime);
 
 	HRESULT STDMETHODCALLTYPE QueryInterface(const IID &riid, void **ppvObject);
@@ -51,9 +53,15 @@ public:
 	HRESULT STDMETHODCALLTYPE GetTrustLevel(TrustLevel *) { return E_NOTIMPL; }
 
 private:
+	// Reference counter
 	ULONG _refCount = 0;
+
+	// DateTime value storage
 	DateTime _dateTime = { 0 };
 
+	// Help to calculate current timestamp.
+	// The FILETIME structure is a 64-bit value
+	// representing the number of 100-nanosecond intervals since January 1, 1601.
 	INT64 getCurrentTime()
 	{
 		FILETIME now;
