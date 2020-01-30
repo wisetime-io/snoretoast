@@ -40,8 +40,11 @@
 #include <filesystem>
 #include <string>
 #include <vector>
+#include <functional>
 
 #include "dynamic/winrt-base.h"
+#include "dynamic/base/noncopyable.h"
+#include "activationcallback.h"
 
 using namespace Microsoft::WRL;
 using namespace ABI::Windows::Data::Xml::Dom;
@@ -51,16 +54,31 @@ enum class Duration {
     Long // 25s
 };
 
+class LIBSNORETOAST_EXPORT SnoreToastsActivationCallback : public ActivationCallback
+{
+    DISABLE_COPY(SnoreToastsActivationCallback)
+public:
+    SnoreToastsActivationCallback() = default;
+
+	void setOnToastActivate(std::function<void(const std::wstring&)> onToastActivate)
+	{
+		_onToastActivate = onToastActivate;
+	}
+
+private:
+	std::function<void(const std::wstring &)> _onToastActivate;
+
+    HRESULT onActivate(const std::wstring &appUserModelId, const std::wstring &invokedArgs,
+                       const std::wstring &msg) override;
+};
+
 class LIBSNORETOAST_EXPORT SnoreToasts
 {
 public:
     static bool supportsModernFeatures();
-
     static std::wstring version();
-    static HRESULT backgroundCallback(const std::wstring &appUserModelId,
-                                      const std::wstring &invokedArgs, const std::wstring &msg);
 
-    SnoreToasts(const std::wstring &appID);
+	SnoreToasts(const std::wstring &appID);
     ~SnoreToasts();
 
     HRESULT displayToast(const std::wstring &title, const std::wstring &body,
@@ -76,9 +94,6 @@ public:
     void setTextBoxEnabled(bool textBoxEnabled);
 
     void setPayload(const std::wstring &payload);
-
-    std::filesystem::path pipeName() const;
-    void setPipeName(const std::filesystem::path &pipeName);
 
     std::filesystem::path application() const;
     void setApplication(const std::filesystem::path &application);

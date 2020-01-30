@@ -284,9 +284,8 @@ SnoreToastActions::Actions parse(std::vector<wchar_t *> args)
             if (image.empty()) {
                 image = getIcon();
             }
-            SnoreToasts app(appID);
-            app.setPipeName(pipe);
-            app.setSilent(silent);
+            SnoreToasts app(appID); // TODO: this example is actually broken and works by old way
+            app.setSilent(silent); // need to improve it to deal with toasts w\o pipes
             app.setSound(sound);
             app.setId(id);
             app.setButtons(buttons);

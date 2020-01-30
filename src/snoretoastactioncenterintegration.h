@@ -21,9 +21,41 @@
 #include <ntverp.h>
 #include <sstream>
 #include <wrl.h>
+#include <mutex>
+
+#include "activationcallback.h"
+#include "dynamic/base/noncopyable.h"
 
 #define ST_WSTRINGIFY(X) L##X
 #define ST_STRINGIFY(X) ST_WSTRINGIFY(X)
+
+class ActivationCallbackWrapper final
+{
+    DISABLE_COPY(ActivationCallbackWrapper)
+public:
+    ActivationCallbackWrapper() = default;
+
+    void set(ActivationCallback *callback)
+    {
+        std::lock_guard<std::mutex> lock(_callbackMutex);
+        _callback = callback;
+    }
+
+	void remove() { set(nullptr); }
+
+    HRESULT invokeOnActivate(const std::wstring &appUserModelId, const std::wstring &invokedArgs,
+                             const std::wstring &msg)
+    {
+        std::lock_guard<std::mutex> lock(_callbackMutex);
+
+        return (_callback != nullptr) ? _callback->onActivate(appUserModelId, invokedArgs, msg)
+                                      : S_OK;
+    }
+
+private:
+    std::mutex _callbackMutex;
+    ActivationCallback *_callback = nullptr;
+};
 
 typedef struct NOTIFICATION_USER_INPUT_DATA
 {
@@ -48,10 +80,8 @@ class DECLSPEC_UUID(SNORETOAST_CALLBACK_GUID) SnoreToastActionCenterIntegration
               INotificationActivationCallback>
 {
 public:
-    static std::wstring uuid()
-    {
-        return ST_STRINGIFY(SNORETOAST_CALLBACK_GUID);
-    }
+    static ActivationCallbackWrapper callback;
+    static std::wstring uuid() { return ST_STRINGIFY(SNORETOAST_CALLBACK_GUID); }
 
     SnoreToastActionCenterIntegration() {}
     virtual HRESULT STDMETHODCALLTYPE Activate(__RPC__in_string LPCWSTR appUserModelId,
@@ -63,6 +93,7 @@ public:
         if (invokedArgs == nullptr) {
             return S_OK;
         }
+
         std::wstringstream msg;
         for (ULONG i = 0; i < count; ++i) {
             std::wstring tmp = data[i].Value;
@@ -70,8 +101,12 @@ public:
             std::replace(tmp.begin(), tmp.end(), L'\r', L'\n');
             msg << tmp;
         }
-        return SnoreToasts::backgroundCallback(appUserModelId, invokedArgs, msg.str());
+
+        return SnoreToastActionCenterIntegration::callback.invokeOnActivate(
+                appUserModelId, invokedArgs, msg.str());
     }
 };
+
+ActivationCallbackWrapper SnoreToastActionCenterIntegration::callback;
 
 CoCreatableClass(SnoreToastActionCenterIntegration);
