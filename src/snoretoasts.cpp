@@ -23,6 +23,7 @@
 #include "dynamic/api/ntapi.h"
 #include "dynamic/winrt-base.h"
 #include "dynamic/utils/stringwrapper.h"
+#include "dynamic/utils/datetimewrapper.h"
 #include <wrl/event.h>
 #include <wrl\wrappers\corewrappers.h>
 #include <sstream>
@@ -61,8 +62,8 @@ public:
     SnoreToasts *m_parent;
 
     std::wstring m_appID;
-    
-	std::wstring m_title;
+
+    std::wstring m_title;
     std::wstring m_body;
     std::filesystem::path m_image;
     std::wstring m_sound = L"Notification.Default";
@@ -82,7 +83,7 @@ public:
     ComPtr<IToastNotifier> m_notifier;
     ComPtr<IToastNotification> m_notification;
 
-	ComPtr<IToastNotificationHistory> getHistory()
+    ComPtr<IToastNotificationHistory> getHistory()
     {
         ComPtr<IToastNotificationManagerStatics2> toastStatics2;
         if (ST_CHECK_RESULT(m_toastManager.As(&toastStatics2))) {
@@ -102,7 +103,7 @@ SnoreToasts::~SnoreToasts()
 }
 
 HRESULT SnoreToasts::displayToast(const std::wstring &title, const std::wstring &body,
-                                  const std::filesystem::path &image)
+                                  const std::filesystem::path &image, INT64 expireTimeoutSec)
 {
     // asume that we fail
     d->m_action = SnoreToastActions::Actions::Error;
@@ -159,7 +160,7 @@ HRESULT SnoreToasts::displayToast(const std::wstring &title, const std::wstring 
 
     ST_RETURN_ON_ERROR(setTextValues());
 
-    ST_RETURN_ON_ERROR(createToast());
+    ST_RETURN_ON_ERROR(createToast(expireTimeoutSec));
     d->m_action = SnoreToastActions::Actions::Clicked;
     return S_OK;
 }
@@ -437,7 +438,7 @@ std::wstring SnoreToasts::formatAction(
 }
 
 // Create and display the toast
-HRESULT SnoreToasts::createToast()
+HRESULT SnoreToasts::createToast(INT64 expireTimeoutSec)
 {
     ST_RETURN_ON_ERROR(d->m_toastManager->CreateToastNotifierWithId(
             StringWrapper(d->m_appID.c_str()).Get(), &d->m_notifier));
@@ -447,6 +448,11 @@ HRESULT SnoreToasts::createToast()
             StringWrapper(RuntimeClass_Windows_UI_Notifications_ToastNotification).Get(),
             IID_INS_ARGS(&factory)));
     ST_RETURN_ON_ERROR(factory->CreateToastNotification(d->m_toastXml.Get(), &d->m_notification));
+
+    if (expireTimeoutSec > 0) {
+        DateTimeWrapper dateTime(expireTimeoutSec * 1000);
+        ST_RETURN_ON_ERROR(d->m_notification->put_ExpirationTime(&dateTime));
+    }
 
     ComPtr<Notifications::IToastNotification2> toastV2;
     if (SUCCEEDED(d->m_notification.As(&toastV2))) {
@@ -522,14 +528,15 @@ void SnoreToasts::setPayload(const std::wstring &payload)
 }
 
 HRESULT SnoreToastsActivationCallback::onActivate(const std::wstring &appUserModelId,
-                                           const std::wstring &invokedArgs, const std::wstring &msg)
+                                                  const std::wstring &invokedArgs,
+                                                  const std::wstring &msg)
 {
-    tLog << "SnoreToastsActivationCallback::Activate: " << appUserModelId << " : "
-         << invokedArgs << " : " << msg	;
+    tLog << "SnoreToastsActivationCallback::Activate: " << appUserModelId << " : " << invokedArgs
+         << " : " << msg;
     const auto dataMap = Utils::splitData(invokedArgs);
     const auto action = SnoreToastActions::getAction(dataMap.at(L"action"));
-    
-	std::wstring dataString;
+
+    std::wstring dataString;
     if (action == SnoreToastActions::Actions::TextEntered) {
         std::wstringstream sMsg;
         sMsg << invokedArgs << L"text=" << msg;
@@ -538,7 +545,7 @@ HRESULT SnoreToastsActivationCallback::onActivate(const std::wstring &appUserMod
         dataString = invokedArgs;
     }
 
-	if (_onToastActivate) {
+    if (_onToastActivate) {
         _onToastActivate(dataString);
     }
 

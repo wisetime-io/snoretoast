@@ -270,6 +270,8 @@ SnoreToastActions::Actions parse(std::vector<wchar_t *> args)
     } else {
         if (!SnoreToasts::supportsModernFeatures())
             return SnoreToastActions::Actions::Error;
+		title = L"Title";
+		body = L"Body";
 
         hr = (title.length() > 0 && body.length() > 0) ? S_OK : E_FAIL;
         if (SUCCEEDED(hr)) {
@@ -291,7 +293,7 @@ SnoreToastActions::Actions parse(std::vector<wchar_t *> args)
             app.setButtons(buttons);
             app.setTextBoxEnabled(isTextBoxEnabled);
             app.setDuration(duration);
-            app.displayToast(title, body, image);
+            app.displayToast(title, body, image, 20);
             //            return app.userAction();
         } else {
             help(L"");
