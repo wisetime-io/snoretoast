@@ -38,6 +38,7 @@ public:
 		return ++_refCount;
 	}
 
+    // decrements point reference count, and deletes self if reference count reduces to zero
 	ULONG STDMETHODCALLTYPE Release() {
 		ULONG newRef = --_refCount;
 		if (!newRef)
