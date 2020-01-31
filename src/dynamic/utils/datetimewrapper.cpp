@@ -5,14 +5,12 @@ DateTimeWrapper::DateTimeWrapper(INT64 ms)
     // The FILETIME structure is a 64-bit value
     // representing the number of 100-nanosecond intervals since January 1, 1601.
     // And in such case we need to conver ms to similiar value.
-    _dateTime.UniversalTime = getCurrentTime() + (ms * 10000);
+    _wrappedValue.UniversalTime = getCurrentTime() + (ms * 10000);
 }
-
-DateTimeWrapper::~DateTimeWrapper() {}
 
 HRESULT STDMETHODCALLTYPE DateTimeWrapper::get_Value(DateTime *dateTime)
 {
-    *dateTime = _dateTime;
+    *dateTime = _wrappedValue;
     return S_OK;
 }
 
@@ -24,8 +22,8 @@ HRESULT STDMETHODCALLTYPE DateTimeWrapper::QueryInterface(const IID &riid, void 
 
     bool validQueryInterface = false;
 
-	// Verification of different interface types
-	// and returning back the proper pointer
+    // Verification of different interface types
+    // and returning back the proper pointer
     if (riid == __uuidof(IUnknown)) {
         *ppvObject = static_cast<IUnknown *>(this);
         validQueryInterface = true;
@@ -35,8 +33,8 @@ HRESULT STDMETHODCALLTYPE DateTimeWrapper::QueryInterface(const IID &riid, void 
     }
 
     if (validQueryInterface) {
-		// In case of successful resolving of instance
-		// by interface type - increment reference counter
+        // In case of successful resolving of instance
+        // by interface type - increment reference counter
         AddRef();
     }
 
