@@ -83,6 +83,13 @@ public:
     SnoreToasts(const std::wstring &appID);
     ~SnoreToasts();
 
+	/*
+	 * Display created toast with:
+	 * - title
+	 * - body
+	 * - path to custom image
+	 * - some time to live in action center (optional). Will be default in case of 0 or less.
+	*/
     HRESULT displayToast(const std::wstring &title, const std::wstring &body,
                          const std::filesystem::path &image, INT64 toastActionCenterTtlSec = 0);
     bool closeNotification();
