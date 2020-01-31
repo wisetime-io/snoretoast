@@ -41,7 +41,8 @@ public:
     // decrements point reference count, and deletes self if reference count reduces to zero
 	ULONG STDMETHODCALLTYPE Release() {
 		ULONG postReleaseCount = --_refCount;
-		if (!newRef)
+		if (postReleaseCount == 0) {
+          // last reference released
             // MS Docs: When the reference count on an object reaches zero, Release must cause the interface pointer to free itself. 
             // When the released pointer is the only (formerly) outstanding reference to an object, the implementation must free the object.
 			delete this;
