@@ -103,7 +103,7 @@ SnoreToasts::~SnoreToasts()
 }
 
 HRESULT SnoreToasts::displayToast(const std::wstring &title, const std::wstring &body,
-                                  const std::filesystem::path &image, INT64 expireTimeoutSec)
+                                  const std::filesystem::path &image, INT64 toastActionCenterTtlSec)
 {
     // asume that we fail
     d->m_action = SnoreToastActions::Actions::Error;
@@ -160,7 +160,7 @@ HRESULT SnoreToasts::displayToast(const std::wstring &title, const std::wstring 
 
     ST_RETURN_ON_ERROR(setTextValues());
 
-    ST_RETURN_ON_ERROR(createToast(expireTimeoutSec));
+    ST_RETURN_ON_ERROR(createToast(toastActionCenterTtlSec));
     d->m_action = SnoreToastActions::Actions::Clicked;
     return S_OK;
 }
@@ -438,7 +438,7 @@ std::wstring SnoreToasts::formatAction(
 }
 
 // Create and display the toast
-HRESULT SnoreToasts::createToast(INT64 expireTimeoutSec)
+HRESULT SnoreToasts::createToast(INT64 toastActionCenterTtlSec)
 {
     ST_RETURN_ON_ERROR(d->m_toastManager->CreateToastNotifierWithId(
             StringWrapper(d->m_appID.c_str()).Get(), &d->m_notifier));
@@ -451,8 +451,8 @@ HRESULT SnoreToasts::createToast(INT64 expireTimeoutSec)
 
 	// If we have some expire timeout - setup it in DateTimeWrapper
 	// and pass to toast
-    if (expireTimeoutSec > 0) {
-        DateTimeWrapper dateTime(expireTimeoutSec * 1000);
+    if (toastActionCenterTtlSec > 0) {
+        DateTimeWrapper dateTime(toastActionCenterTtlSec * 1000);
         ST_RETURN_ON_ERROR(d->m_notification->put_ExpirationTime(&dateTime));
     }
 

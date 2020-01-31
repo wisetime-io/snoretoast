@@ -84,7 +84,7 @@ public:
     ~SnoreToasts();
 
     HRESULT displayToast(const std::wstring &title, const std::wstring &body,
-                         const std::filesystem::path &image, INT64 expireTimeoutSec = 0);
+                         const std::filesystem::path &image, INT64 toastActionCenterTtlSec = 0);
     bool closeNotification();
 
     void setSound(const std::wstring &soundFile);
@@ -108,7 +108,7 @@ public:
                                       &extraData = {}) const;
 
 private:
-    HRESULT createToast(INT64 expireTimeoutSec);
+    HRESULT createToast(INT64 toastActionCenterTtlSec);
     HRESULT setImage();
     HRESULT setSound();
     HRESULT setTextValues();
