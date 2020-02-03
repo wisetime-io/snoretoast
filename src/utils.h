@@ -1,5 +1,5 @@
 /*
-    SnoreToast is capable to invoke Windows 8 toast notifications.
+    This SnoreToast library is capable to invoke Windows 10 toast notifications.
     Copyright (C) 2019  Hannah von Reth <vonreth@kde.org>
 
     SnoreToast is free software: you can redistribute it and/or modify
