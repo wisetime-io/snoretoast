@@ -78,7 +78,6 @@ class LIBSNORETOAST_EXPORT SnoreToasts
 {
 public:
     static bool supportsModernFeatures();
-    static std::wstring version();
 
     SnoreToasts(const std::wstring &appID);
     ~SnoreToasts();

@@ -145,7 +145,6 @@ std::wstring formatData(const std::vector<std::pair<std::wstring_view, std::wstr
     for (const auto &p : data) {
         add(p);
     }
-    add({ L"version", SnoreToasts::version() });
     return out.str();
 }
 
@@ -164,7 +163,7 @@ std::wstring formatWinError(unsigned long errorCode)
 
 ToastLog::ToastLog()
 {
-    *this << Utils::selfLocate() << L"v" << SnoreToasts::version() << L"\n\t";
+    *this << Utils::selfLocate() << L"\n\t";
 }
 
 ToastLog::~ToastLog()

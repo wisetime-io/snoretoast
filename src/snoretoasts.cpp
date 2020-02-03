@@ -488,15 +488,10 @@ HRESULT SnoreToasts::createToast(INT64 toastActionCenterTtlSec)
             << L"Command Line: " << GetCommandLineW();
         tLog << err.str();
         std::wcerr << err.str() << std::endl;
-        // offset to not conflic with existing error statuses
+        // offset to not conflict with existing error statuses
         return -6000 - setting;
     }
     return d->m_notifier->Show(d->m_notification.Get());
-}
-
-std::wstring SnoreToasts::version()
-{
-    return SNORETOAST_VERSION;
 }
 
 bool SnoreToasts::supportsModernFeatures()
