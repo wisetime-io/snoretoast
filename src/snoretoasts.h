@@ -1,19 +1,19 @@
 /*
-    SnoreToast is capable to invoke Windows 8 toast notifications.
-    Copyright (C) 2013-2019  Hannah von Reth <vonreth@kde.org>
+        SnoreToast is capable to invoke Windows 8 toast notifications.
+        Copyright (C) 2013-2019  Hannah von Reth <vonreth@kde.org>
 
-    SnoreToast is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+        SnoreToast is free software: you can redistribute it and/or modify
+        it under the terms of the GNU Lesser General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version.
 
-    SnoreToast is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Lesser General Public License for more details.
+        SnoreToast is distributed in the hope that it will be useful,
+        but WITHOUT ANY WARRANTY; without even the implied warranty of
+        MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+        GNU Lesser General Public License for more details.
 
-    You should have received a copy of the GNU Lesser General Public License
-    along with SnoreToast.  If not, see <http://www.gnu.org/licenses/>.
+        You should have received a copy of the GNU Lesser General Public License
+        along with SnoreToast.  If not, see <http://www.gnu.org/licenses/>.
 */
 #pragma once
 
@@ -44,10 +44,12 @@
 
 #include "dynamic/winrt-base.h"
 #include "dynamic/base/noncopyable.h"
+#include "dynamic/utils/datetimewrapper.h"
 #include "activationcallback.h"
 
 using namespace Microsoft::WRL;
 using namespace ABI::Windows::Data::Xml::Dom;
+using namespace ABI::Windows::Foundation;
 
 enum class Duration {
     Short, // default 7s
@@ -60,13 +62,13 @@ class LIBSNORETOAST_EXPORT SnoreToastsActivationCallback : public ActivationCall
 public:
     SnoreToastsActivationCallback() = default;
 
-	void setOnToastActivate(std::function<void(const std::wstring&)> onToastActivate)
-	{
-		_onToastActivate = onToastActivate;
-	}
+    void setOnToastActivate(std::function<void(const std::wstring &)> onToastActivate)
+    {
+        _onToastActivate = onToastActivate;
+    }
 
 private:
-	std::function<void(const std::wstring &)> _onToastActivate;
+    std::function<void(const std::wstring &)> _onToastActivate;
 
     HRESULT onActivate(const std::wstring &appUserModelId, const std::wstring &invokedArgs,
                        const std::wstring &msg) override;
@@ -78,11 +80,18 @@ public:
     static bool supportsModernFeatures();
     static std::wstring version();
 
-	SnoreToasts(const std::wstring &appID);
+    SnoreToasts(const std::wstring &appID);
     ~SnoreToasts();
 
+	/*
+	 * Display created toast with:
+	 * - title
+	 * - body
+	 * - path to custom image
+	 * - some time to live in action center (optional). Will be default in case of 0 or less.
+	*/
     HRESULT displayToast(const std::wstring &title, const std::wstring &body,
-                         const std::filesystem::path &image);
+                         const std::filesystem::path &image, INT64 toastActionCenterTtlSec = 0);
     bool closeNotification();
 
     void setSound(const std::wstring &soundFile);
@@ -106,7 +115,7 @@ public:
                                       &extraData = {}) const;
 
 private:
-    HRESULT createToast();
+    HRESULT createToast(INT64 toastActionCenterTtlSec);
     HRESULT setImage();
     HRESULT setSound();
     HRESULT setTextValues();
