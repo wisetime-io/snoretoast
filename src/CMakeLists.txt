@@ -6,7 +6,13 @@ target_include_directories(SnoreToastActions INTERFACE
 add_library(SnoreToast::SnoreToastActions ALIAS SnoreToastActions)
 
 configure_file(config.h.in config.h @ONLY)
-add_library(libsnoretoast STATIC dynamic/api/ntapi.cpp dynamic/utils/datetimewrapper.cpp dynamic/utils/stringwrapper.cpp dynamic/api/combaseapi.cpp dynamic/api/rterrorapi.cpp dynamic/winrt-base.cpp snoretoasts.cpp linkhelper.cpp utils.cpp)
+add_library(libsnoretoast STATIC dynamic/api/ntapi.cpp dynamic/utils/datetimewrapper.cpp dynamic/utils/stringwrapper.cpp
+        dynamic/api/combaseapi.cpp
+        dynamic/api/rterrorapi.cpp
+        dynamic/winrt-base.cpp
+        snoretoasts.cpp
+        linkhelper.cpp
+        utils.cpp)
 target_link_libraries(libsnoretoast PUBLIC shlwapi SnoreToast::SnoreToastActions)
 target_compile_definitions(libsnoretoast PRIVATE UNICODE _UNICODE __WRL_CLASSIC_COM_STRICT__ WIN32_LEAN_AND_MEAN NOMINMAX)
 target_compile_definitions(libsnoretoast PUBLIC __WRL_CLASSIC_COM_STRICT__)
@@ -15,8 +21,7 @@ set_target_properties(libsnoretoast PROPERTIES EXPORT_NAME LibSnoreToast)
 add_library(SnoreToast::LibSnoreToast ALIAS libsnoretoast)
 generate_export_header(libsnoretoast)
 
-create_icon_rc(${PROJECT_SOURCE_DIR}/data/zzz.ico TOAST_ICON)
-add_executable(snoretoast WIN32 main.cpp ${TOAST_ICON})
+add_executable(snoretoast WIN32 main.cpp)
 target_link_libraries(snoretoast PRIVATE SnoreToast::LibSnoreToast snoreretoastsources)
 target_compile_definitions(snoretoast PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
 add_executable(SnoreToast::SnoreToast ALIAS snoretoast)

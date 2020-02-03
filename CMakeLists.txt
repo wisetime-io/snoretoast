@@ -6,12 +6,10 @@ set(SNORETOAST_CALLBACK_GUID eb1fdd5b-8f70-4b5a-b230-998a2dc19303)
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/)
 
-option(BUILD_EXAMPLES "Whether to build the examples" OFF)
 option(BUILD_STATIC_RUNTIME "Whether link statically to the msvc runtime" ON)
 
 include(GenerateExportHeader)
 
-include(SnoreMacros)
 include(cmakerc/CMakeRC)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -32,6 +30,3 @@ endif()
 add_subdirectory(data)
 add_subdirectory(src)
 
-if (BUILD_EXAMPLES)
-    add_subdirectory(examples)
-endif()
